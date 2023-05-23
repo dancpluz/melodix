@@ -1,5 +1,5 @@
 {
-  "name": "rc-music-stream",
+  "name": "client",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,10 +11,11 @@
   "dependencies": {
     "eslint": "8.41.0",
     "eslint-config-next": "13.4.3",
-    "express": "^4.18.2",
     "next": "13.4.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "socket.io": "^4.6.1"
+    "socket.io": "^4.6.1",
+    "socket.io-client": "^4.6.1",
+    "styled-components": "^6.0.0-rc.1"
   }
 }
