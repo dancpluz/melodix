@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from 'react';
 
 const URL = "http://localhost:3001";
 const socket = io(URL);
+var audioContext = new AudioContext();
+
 
 export default function Home() {
   const [trackList,setTrackList] = useState([]);
   const [songPlaying, setSongPlaying] = useState(true);
-  const [text, setText] = useState('vazio')
   const [receivedChunks,setReceivedChunks] = useState([])
   const [currentChunk, setCurrentChunk] = useState(0)
 
@@ -35,23 +36,37 @@ export default function Home() {
     return () => { clearInterval(interval) };
   },[]);
 
-  const audioContext = new AudioContext();
 
-  socket.on("receiveChunk", (chunk) => {
-    if (chunk.byteLength == 0) {
-      socket.emit('sendChunk');
-    } else {
-    console.log(chunk)
-    decodeAudio(chunk).then((response) => {
-      setReceivedChunks(prevChunks => [...prevChunks,response]);
-    });
-    console.log(receivedChunks);
-    }
+  socket.on("receiveChunk", async (chunk) => {
+    console.log(chunk);
+    audioContext.resume();
+    const audioBuf = await decodeAudio(chunk);
+    console.log(audioBuf);
   });
 
+
   async function decodeAudio(chunk) {
-    const audioBuffer = await audioContext.decodeAudioData(chunk);
-    return audioBuffer;
+    return new Promise((resolve,reject) => {
+      audioContext.decodeAudioData(chunk,(audioBuffer) => {
+        resolve(audioBuffer);
+      },(error) => {
+        reject(error);
+      });
+    });
+  }
+
+  
+
+  async function createSoundSource(audioData) {
+    await Promise.all(
+      audioData.map(async (chunk) => {
+        const soundBuffer = await audioContext.decodeAudioData(chunk);
+        const soundSource = audioContext.createBufferSource();
+        soundSource.buffer = soundBuffer;
+        soundSource.connect(audioContext.destination);
+        soundSource.start(0);
+      })
+    );
   }
 
   function playBuffer(audioBuffer, time) {
