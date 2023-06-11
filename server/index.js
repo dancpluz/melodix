@@ -2,8 +2,9 @@ import express from "express";
 import http from "http";
 import { Server as IOServer } from "socket.io";
 import fs from "fs";
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from "@ffmpeg-installer/ffmpeg";
+import artists from './tracks.js';
+import { readFolders, createChunkStreams } from './tracks.js';
+
 
 const PORT = 3001;
 const app = express();
@@ -14,31 +15,38 @@ const io = new IOServer(server,{
   },
 });
 
+let songStreams = []
+
 server.listen(PORT,() => {
   console.log(`Escutando porta ${PORT}`);
 });
 
 io.on("connection", (socket) => {
-  console.log('test')
+  socket.on("sendTracks", () => {
+    console.log("Enviando informações de músicas carregadas");
+    socket.emit("receiveTracks", JSON.stringify(artists));
+  })
 
+  socket.on("loadSong", async (path) => {
+    const dir = path.slice(0,-4);
+    console.log(`Carregando chunks de ${dir}`);
+    const chunkPaths = await readFolders(dir);
+    songStreams = await createChunkStreams(dir, chunkPaths);
+    socket.emit("receiveChunks")
+  })
 
-  socket.on('updateTrackList', () => {
-    // Atualizar lista
-    console.log('Lista Atualizada')
-    }
-  )
+  // socket.on ()
+  // socket.on("sendSong",() => {
+  //   const stream = fs.createReadStream("./tracks/test.mp3");
 
-  socket.on("sendSong",() => {
-    const stream = fs.createReadStream("./tracks/test.mp3");
-
-    stream.on("data",(chunk) => {
+  //   stream.on("data",(chunk) => {
       
-    });
+  //   });
 
-    stream.on("end",() => {
+  //   stream.on("end",() => {
       
-    });
-  });
+  //   });
+  // });
 
   // socket.on("sendSong",() => {
   //   chunks = [];
@@ -63,16 +71,4 @@ io.on("connection", (socket) => {
   // })
 
 })
-
-function calculateChunkSize(chunkDuration) {
-  const sampleRate = 44100; // Assuming 44.1 kHz stereo audio
-  const bytesPerSample = 2; // Assuming 16-bit audio
-  const channels = 2; // Stereo
-
-  const chunkSize = Math.ceil(
-    (chunkDuration * sampleRate * bytesPerSample * channels) / 1000
-  );
-
-  return chunkSize;
-}
 

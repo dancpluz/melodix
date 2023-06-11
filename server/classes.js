@@ -50,7 +50,7 @@ export class Artist {
 
   async loadTracksChunks() {
     console.log(`Carregando música(s) do ${this.name}...`)
-    this.tracks.forEach(async (track, n) => {
+    this.tracks.forEach(async (track,n) => {
       console.log(`${n + 1}. Carregando chunk(s) da música ${track.title}:`)
       await track.loadChunks()
     });

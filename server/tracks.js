@@ -40,6 +40,7 @@
 */
 
 import fs from "fs/promises";
+import { createReadStream } from "fs";
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 import { Artist } from './classes.js';
@@ -48,7 +49,7 @@ ffmpeg.setFfmpegPath(ffmpegPath.path);
 
 const dir = 'tracks';
 
-const artistsName = await loadArtists(dir);
+const artistsName = await readFolders(dir);
 console.log(`Artista(s) descoberto(s):\n${artistsName}\n`);
 
 const artists = [];
@@ -62,13 +63,17 @@ for (const name of artistsName) {
 console.log(`Artista(s) Carregado(s)!\n`)
 
 for (const artist of artists) {
-  await artist.loadTracksChunks();
-  console.log(`Chunks do Artista ${artist.name} carregados`)
+  if (artist.tracks.length == 0) {
+    console.log(`Não há músicas na pasta do artista ${artist.name}`)
+  } else {
+    await artist.loadTracksChunks();
+    console.log(`Chunks do Artista ${artist.name} carregados`);
+  }
 }
 
 console.log(`Todos chunks carregados!`)
 
-async function loadArtists(dir) {
+export async function readFolders(dir) {
   try {
     return fs.readdir(dir)
   } catch (err) {
@@ -76,105 +81,31 @@ async function loadArtists(dir) {
   }
 }
 
+export async function createChunkStreams(path,chunkPaths) {
+  const chunks = [];
 
+  await Promise.all(
+    chunkPaths.map(async (chunkPath) => {
+      const streamBlocks = [];
 
-  // this.tracks = await Promise.all(
-  //   filenames.map(
-  //     (filename,n) =>
-  //       new Promise((resolve,reject) => {
-  //         ffprobe(
-  //           `./tracks/${filename}`,
-  //           { path: ffprobeStatic.path },
-  //           function (err,info) {
-  //             if (err) {
-  //               reject(err);
-  //             } else {
-  //               resolve({
-  //                 'id': n,
-  //                 'title': filename.slice(0,-4),
-  //                 'bitrate': info.streams[0].bit_rate,
-  //                 'duration': info.streams[0].duration,
-  //                 'path': `./tracks/${filename}`
-  //               });
-  //             }
-  //           }
-  //         );
-  //       })
-  //   )
-  // );
-  // }
+      const stream = createReadStream(`${path}/${chunkPath}`);
 
-// class Artist {
-//   constructor() {
-//     this.tracks = [];
-//   }
+      stream.on("data",(block) => {
+        streamBlocks.push(block);
+      });
 
-  
+      await new Promise((resolve) => {
+        stream.on("end",() => {
+          const chunk = Buffer.concat(streamBlocks);
+          chunks.push(chunk);
+          resolve();
+        });
+      });
+    })
+  );
 
-//   async loadTracks(dir) {
-//     let filenames = await readdir(dir);
-//     filenames = filenames.filter(
-//       (filename) => extname(filename) === '.mp3'
-//     );
+  console.log('Chunks carregados!')
+  return chunks;
+}
 
-//     this.tracks = await Promise.all(
-//       filenames.map(
-//         (filename,n) =>
-//           new Promise((resolve,reject) => {
-//             ffprobe(
-//               `./tracks/${filename}`,
-//               { path: ffprobeStatic.path },
-//               function (err,info) {
-//                 if (err) {
-//                   reject(err);
-//                 } else {
-//                   resolve({
-//                     'id': n,
-//                     'title': filename.slice(0,-4),
-//                     'bitrate': info.streams[0].bit_rate,
-//                     'duration': info.streams[0].duration,
-//                     'path': `./tracks/${filename}`
-//                   });
-//                 }
-//               }
-//             );
-//           })
-//       )
-//     );
-//   }
-
-// }
-
-// class Tracks {
-//   constructor() {
-//     this.tracks = [];
-    
-//   }
-
-
-
-//   cutAudioIntoChunks(track) {
-//   const outputDirectory = './tracks/chunks'; // Output directory for storing the chunks
-//   const chunkDuration = 30; // Duration of each chunk in seconds
-
-//   // Create the output directory if it doesn't exist
-//   if (!fs.existsSync(outputDirectory)) {
-//     fs.mkdirSync(outputDirectory);
-//   }
-
-//   // Use ffmpeg to split the audio file into chunks
-//     ffmpeg(path)
-//     .setStartTime(0)
-//     .setDuration(chunkDuration)
-//     .output(outputDirectory + '/chunk-%03d.mp3')
-//     .on('end',() => {
-//       console.log('Audio cutting complete!');
-//     })
-//     .on('error',(err) => {
-//       console.error('Error cutting audio:',err);
-//     })
-//     .run();
-//   }
-// }
-
-// export default Tracks;
+export default artists;
