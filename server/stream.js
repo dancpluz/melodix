@@ -5,7 +5,6 @@ import fs from "fs";
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 
-
 const PORT = 3001;
 const app = express();
 const server = http.createServer(app);
@@ -18,49 +17,6 @@ const io = new IOServer(server,{
 server.listen(PORT,() => {
   console.log(`Escutando porta ${PORT}`);
 });
-
-async function cutAudioIntoChunks(track) {
-  const outputDirectory = './tracks/chunks'; // Output directory for storing the chunks
-  const chunkDuration = 30000; // Duration of each chunk in milliseconds (30 seconds)
-
-  // Create the output directory if it doesn't exist
-  if (!fs.existsSync(outputDirectory)) {
-    fs.mkdirSync(outputDirectory);
-  }
-
-  const numChunks = Math.ceil(track.duration / chunkDuration);
-  console.log(numChunks)
-
-  for (let i = 0; i < numChunks; i++) {
-    const startTime = i * chunkDuration;
-    const chunkFilePath = `${outputDirectory}/chunk-${i + 1}.mp3`;
-
-    console.log(startTime);
-
-    await new Promise((resolve,reject) => {
-      ffmpeg(track.path)
-        .setStartTime(startTime / 1000) // Convert milliseconds to seconds
-        .setDuration(chunkDuration / 10000) // 30 second
-        .output(chunkFilePath)
-        .on('end',() => {
-          console.log(`Chunk ${i + 1} saved successfully.`);
-          resolve();
-        })
-        .on('error',(err) => {
-          console.error(`Error cutting chunk ${i + 1}:`,err);
-          reject(err);
-        })
-        .run();
-    });
-  }
-
-  console.log('Audio cutting complete!');
-}
-
-cutAudioIntoChunks({ 'path': "./tracks/test.mp3",'duration': 204000 })
-  .catch((error) => {
-    console.error('Error cutting audio:',error);
-  });
 
 io.on("connection", (socket) => {
   console.log('test')

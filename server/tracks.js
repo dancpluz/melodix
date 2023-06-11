@@ -42,7 +42,7 @@
 import fs from "fs/promises";
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from "@ffmpeg-installer/ffmpeg";
-import { Artist, Track } from './classes.js';
+import { Artist } from './classes.js';
 
 ffmpeg.setFfmpegPath(ffmpegPath.path);
 
@@ -55,13 +55,18 @@ const artists = [];
 
 for (const name of artistsName) {
   let artist = new Artist(name);
-  console.log(artist.name);
   await artist.loadTracks(dir);
   artists.push(artist);
 }
 
-console.log(artists)
-console.log(artists[0].tracks)
+console.log(`Artista(s) Carregado(s)!\n`)
+
+for (const artist of artists) {
+  await artist.loadTracksChunks();
+  console.log(`Chunks do Artista ${artist.name} carregados`)
+}
+
+console.log(`Todos chunks carregados!`)
 
 async function loadArtists(dir) {
   try {
