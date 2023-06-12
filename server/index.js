@@ -15,13 +15,29 @@ const io = new IOServer(server,{
   },
 });
 
-let songStreams = []
-
 server.listen(PORT,() => {
   console.log(`Escutando porta ${PORT}`);
 });
 
+const activeConnections = [];
+
 io.on("connection", (socket) => {
+  console.log(`Conectado com id:${socket.id}`)
+
+  activeConnections.push(socket.id);
+  console.log("Conexões ativas:", activeConnections.slice(1));
+
+  let songStreams = []
+
+  socket.on("disconnect",() => {
+    const index = activeConnections.indexOf(socket.id);
+    if (index !== -1) {
+      activeConnections.splice(index,1);
+      console.log(`Desconectado com id: ${socket.id}`);
+      console.log("Conexões ativas:",activeConnections.slice(1));
+    }
+  });
+
   socket.on("sendTracks", () => {
     console.log("Enviando informações de músicas carregadas");
     socket.emit("receiveTracks", JSON.stringify(artists));
@@ -32,43 +48,13 @@ io.on("connection", (socket) => {
     console.log(`Carregando chunks de ${dir}`);
     const chunkPaths = await readFolders(dir);
     songStreams = await createChunkStreams(dir, chunkPaths);
-    socket.emit("receiveChunks")
+    socket.emit("songLoaded", songStreams.length);
   })
 
-  // socket.on ()
-  // socket.on("sendSong",() => {
-  //   const stream = fs.createReadStream("./tracks/test.mp3");
+  socket.on("sendChunk", (index) =>{
+    socket.emit("receiveChunk", songStreams[index]);
+  })
 
-  //   stream.on("data",(chunk) => {
-      
-  //   });
-
-  //   stream.on("end",() => {
-      
-  //   });
-  // });
-
-  // socket.on("sendSong",() => {
-  //   chunks = [];
-
-  //   const stream = createReadStream('./tracks/test.mp3');
-
-  //   stream.on("data",(chunk) => {
-  //     chunks.push(chunk);
-  //   });
-
-  //   stream.on("end", () => {     
-  //     console.log("Loaded Chunks")
-  //     socket.emit("chunksLoaded")
-  //   });
-
-  // });
-
-  // socket.on("sendChunk", () => {
-  //   socket.emit('receiveChunk',chunks[0])
-  //   console.log(`Sent chunk, chunks left ${chunks.length}`)
-  //   chunks.shift();
-  // })
 
 })
 

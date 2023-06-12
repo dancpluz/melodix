@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const URL = "http://localhost:3001";
 const socket = io(URL);
+//window.AudioContext = window.AudioContext || window.webkitAudioContext;
 //var audioContext = new AudioContext();
 
 export default function Home() {
@@ -13,15 +14,37 @@ export default function Home() {
   const [songPlaying,setSongPlaying] = useState(false);
   const [currentChunk, setCurrentChunk] = useState(0);
   const [receivedChunks,setReceivedChunks] = useState([]);
+  const chunkMaxRef = useRef(0);
   const tracksRef = useRef(null);
-
-  socket.on("connect", () => {
+  const chunkRef = useRef(0);
+  
+  useEffect(() => {
     console.log(`Conectado com ${socket.id}`);
-    socket.on("receiveChunks", (chunks) => {
-      
-    })
-    }
-  )
+
+    socket.on("songLoaded",(chunkMax) => {
+      chunkMaxRef.current = chunkMax;
+      setSongPlaying(true);
+      console.log(chunkMax);
+    });
+
+    socket.on("receiveChunk",async (songStream) => {
+      const audioBuffer = await decodeAudio(songStream);
+      setReceivedChunks(oldArray => [...oldArray,audioBuffer]);
+      playSample(audioBuffer);
+    });
+
+    return () => {
+      socket.off("songLoaded");
+      socket.off("receiveChunk");
+    };
+  },[]);
+
+  function playSample(audioBuffer) {
+    const sampleSource = audioContext.createBufferSource();
+    sampleSource.buffer = audioBuffer;
+    sampleSource.connect(audioContext.destination);
+    sampleSource.start(0)
+  }
 
   function sendTracksRequest() {
     socket.emit("sendTracks");
@@ -43,80 +66,64 @@ export default function Home() {
     setTrackList(tracksRef.current);
   }
 
-  // socket.on("receiveTracks", (tracks) => {
-  //   console.log(`Informações de música recebidas`);
-  //   tracksRef.current = JSON.parse(tracks);
-  //   setTrackList(JSON.parse(tracks));
-  // })
-
   async function selectSong() {
     setCurrentSong(trackList[2].tracks[0]);
     console.log(currentSong);
     if (currentSong) {
       console.log(`Requisitando música: ${currentSong.title}`)
-      socket.emit("loadSong",(currentSong.path))
+      socket.emit("loadSong",currentSong.path)
     } else {
       console.log("Nenhuma música escolhida")
     }
-
   }
+
+  async function decodeAudio(chunk) {
+    return new Promise((resolve,reject) => {
+      audioContext.decodeAudioData(chunk,(audioBuffer) => {
+        resolve(audioBuffer);
+      },(error) => {
+        reject(error);
+      });
+    });
+  }
+
+//temp
+  useEffect(() => {
+    console.log(receivedChunks);
+  },[receivedChunks]);
 
   useEffect(() => {
     fetchTrackList();
   },[]);
 
-  // useEffect(() => {
-  //   if (songPlaying) {
-  //     const interval = setInterval(() => {
-  //       socket.emit('sendChunk');
-  //       console.log('Requesting Chunk')
-  //     },10000);
-  //   }
-  //   return () => { clearInterval(interval) };
-  // },[]);
+  useEffect(() => {
+    let interval;
+    if (songPlaying) {
+      interval = setInterval(() => {
+        if (chunkRef.current < chunkMaxRef.current) {
+          const currentChunk = chunkRef.current
+          console.log(`Requisitando chunk ${currentChunk}`);
+          socket.emit('sendChunk',currentChunk);
+          chunkRef.current = currentChunk + 1;
+        } else {
+          console.log('Todos os chunks recebidos')
+          clearInterval(interval);
+        }
+      },2000);
+    }
 
-
-  // socket.on("receiveChunk", async (chunk) => {
-  //   console.log(chunk);
-  //   audioContext.resume();
-  //   const audioBuf = await decodeAudio(chunk);
-  //   console.log(audioBuf);
-  // });
-
-
-  // async function decodeAudio(chunk) {
-  //   return new Promise((resolve,reject) => {
-  //     audioContext.decodeAudioData(chunk,(audioBuffer) => {
-  //       resolve(audioBuffer);
-  //     },(error) => {
-  //       reject(error);
-  //     });
-  //   });
-  // }
-
-  // async function createSoundSource(audioData) {
-  //   await Promise.all(
-  //     audioData.map(async (chunk) => {
-  //       const soundBuffer = await audioContext.decodeAudioData(chunk);
-  //       const soundSource = audioContext.createBufferSource();
-  //       soundSource.buffer = soundBuffer;
-  //       soundSource.connect(audioContext.destination);
-  //       soundSource.start(0);
-  //     })
-  //   );
-  // }
-
-  // function playBuffer(audioBuffer, time) {
-  //   const source = audioContext.createBufferSource();
-  //   source.buffer = audioBuffer;
-  //   source.connect(audioContext.destination);
-  //   source.start(time);
-  // }
+    return () => {
+      clearInterval(interval);
+    };
+  },[songPlaying]);
 
   return (
     <div>
       <h1>VeighRadio</h1>
       <p>{JSON.stringify(trackList)}</p>
+      {trackList.map((artist) => {
+        <h2>{artist.name}</h2>
+      })}
       <ul>
         {}
       </ul>
