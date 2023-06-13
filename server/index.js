@@ -1,7 +1,6 @@
 import express from "express";
 import http from "http";
 import { Server as IOServer } from "socket.io";
-import fs from "fs";
 import artists from './tracks.js';
 import { readFolders, createChunkStreams } from './tracks.js';
 

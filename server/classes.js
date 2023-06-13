@@ -96,7 +96,7 @@ export class Track {
             .on('error',(err) => reject(err))
             .run();
         });
-        console.log(`Chunk ${i + 1} salvo com sucesso.`);
+        console.log(`[${this.path}] Chunk ${i + 1} salvo com sucesso.`);
       } catch (err) {
         console.error(`Erro cortando chunk ${i + 1}:`,err);
       }
