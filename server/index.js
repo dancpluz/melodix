@@ -22,10 +22,12 @@ server.listen(PORT,() => {
 const activeConnections = [];
 
 io.on("connection", (socket) => {
-  console.log(`Conectado com id:${socket.id}`)
+  console.log(`Conectado com id: ${socket.id}`)
 
   activeConnections.push(socket.id);
   console.log("Conexões ativas:", activeConnections.slice(1));
+
+  io.emit("receiveConnections", activeConnections.slice(1));
 
   let songStreams = []
 
@@ -34,13 +36,14 @@ io.on("connection", (socket) => {
     if (index !== -1) {
       activeConnections.splice(index,1);
       console.log(`Desconectado com id: ${socket.id}`);
-      console.log("Conexões ativas:",activeConnections.slice(1));
+      console.log("Conexões ativas:", activeConnections.slice(1));
+      io.emit("receiveConnections", activeConnections.slice(1));
     }
   });
 
   socket.on("sendTracks", () => {
-    console.log("Enviando informações de músicas carregadas");
     socket.emit("receiveTracks", JSON.stringify(artists));
+    console.log("Informações de músicas enviadas!");
   })
 
   socket.on("loadSong", async (path) => {
