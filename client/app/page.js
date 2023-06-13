@@ -2,7 +2,6 @@
 import styled from "styled-components";
 import { io } from "socket.io-client";
 import { useEffect,useRef,useState } from "react";
-import dynamic from "next/dynamic";
 
 const Background = styled.div`
     margin: 0;
@@ -186,10 +185,6 @@ const URL = "http://localhost:3001";
 const socket = io(URL);
 var audioContext;
 
-
-
-
-
 export default function Home() {
   const [trackList,setTrackList] = useState([]);
   const [connectionList,setConnectionList] = useState([]);
@@ -207,7 +202,7 @@ export default function Home() {
       window.AudioContext = window.AudioContext || window.webkitAudioContext;
       audioContext = new AudioContext();
     }
-    
+
     socket.on("songLoaded",(chunkMax) => {
       chunkMaxRef.current = chunkMax;
       chunkRef.current = 0;
@@ -281,8 +276,6 @@ export default function Home() {
         playSample(receivedChunks[0]);
         setReceivedChunks(oldArray => oldArray.slice(1));
       },30000)
-    } else {
-      console.log("teste")
     } 
     return () => {
       clearTimeout(interval);
@@ -318,7 +311,7 @@ export default function Home() {
         setRequestChunks(false);
         clearInterval(interval);
       }
-    },2000);
+    },20000);
 
     return () => {
       clearInterval(interval);
