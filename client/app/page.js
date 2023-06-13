@@ -1,11 +1,12 @@
-'use client'
-import styled from 'styled-components';
+"use client"
+import styled from "styled-components";
 import { io } from "socket.io-client";
-import { useEffect,useRef,useState } from 'react';
+import { useEffect,useRef,useState } from "react";
+import dynamic from "next/dynamic";
 
 const Background = styled.div`
     margin: 0;
-    font-family: 'DM Sans', sans-serif;
+    font-family: "DM Sans", sans-serif;
     color: white;
     background-color: black;
   `;
@@ -183,8 +184,11 @@ const CurrentTrackDiv = styled.div`
 
 const URL = "http://localhost:3001";
 const socket = io(URL);
-window.AudioContext = window.AudioContext || window.webkitAudioContext;
-var audioContext = new AudioContext();
+var audioContext;
+
+
+
+
 
 export default function Home() {
   const [trackList,setTrackList] = useState([]);
@@ -199,6 +203,11 @@ export default function Home() {
   const chunkRef = useRef(0);
 
   useEffect(() => {
+    if (typeof window !== undefined) {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContext = new AudioContext();
+    }
+    
     socket.on("songLoaded",(chunkMax) => {
       chunkMaxRef.current = chunkMax;
       chunkRef.current = 0;
@@ -219,7 +228,7 @@ export default function Home() {
       socket.off("songLoaded");
       socket.off("receiveChunk");
     };
-  },[]);
+  });
 
   function playSample(audioBuffer) {
     const sampleSource = audioContext.createBufferSource();
@@ -278,7 +287,7 @@ export default function Home() {
     return () => {
       clearTimeout(interval);
     }
-  }, [receivedChunks])
+  },[receivedChunks,songStarted])
 
   function pauseSong() {
     console.log("Música pausada")
@@ -294,7 +303,7 @@ export default function Home() {
   
   useEffect(() => {
     fetchTrackList();
-  },[]);
+  });
 
   useEffect(() => {
     let interval;
@@ -302,10 +311,10 @@ export default function Home() {
       if (chunkRef.current < chunkMaxRef.current) {
         const currentChunk = chunkRef.current
         console.log(`Requisitando chunk ${currentChunk + 1}`);
-        socket.emit('sendChunk',currentChunk);
+        socket.emit("sendChunk",currentChunk);
         chunkRef.current = currentChunk + 1;
       } else {
-        console.log('Todos os chunks recebidos')
+        console.log("Todos os chunks recebidos")
         setRequestChunks(false);
         clearInterval(interval);
       }
@@ -346,7 +355,7 @@ export default function Home() {
               <ArtistDiv key={artist.name}>
                 <ArtistTitle>
                   <h2>{artist.name}</h2>
-                  <p>{artist.tracks.length > 0 ? `${artist.tracks.length} músicas encontradas` : ''}</p>
+                  <p>{artist.tracks.length > 0 ? `${artist.tracks.length} músicas encontradas` : ""}</p>
                 </ArtistTitle>
                 <TracksDiv>
                   {artist.tracks.length === 0 ? "Nenhuma música encontrada..." : artist.tracks.map((track, n) => {
@@ -354,7 +363,7 @@ export default function Home() {
                       <div key={track.title} onClick={() => playSong(track)}>
                         <p>{n + 1}.</p>
                         <h1>{track.title}</h1>
-                        <h2>{`${Math.floor(track.duration / 60)}:${String(Math.floor(track.duration % 60)).padStart(2,'0')}`}</h2>
+                        <h2>{`${Math.floor(track.duration / 60)}:${String(Math.floor(track.duration % 60)).padStart(2,"0")}`}</h2>
                       </div>
                     )
                   })}
@@ -380,7 +389,7 @@ export default function Home() {
         <CurrentTrackDiv>
           <h1>{!currentTrackInfo ?  "" : currentTrackInfo.title}</h1>
           <h2>{!currentTrackInfo ? "" : currentTrackInfo.artist}</h2>
-          <p>{!currentTrackInfo ? "" : `${Math.floor(currentTrackInfo.duration / 60)}:${String(Math.floor(currentTrackInfo.duration % 60)).padStart(2,'0')}`}</p>
+          <p>{!currentTrackInfo ? "" : `${Math.floor(currentTrackInfo.duration / 60)}:${String(Math.floor(currentTrackInfo.duration % 60)).padStart(2,"0")}`}</p>
         </CurrentTrackDiv>
         {songPlaying ? <PlayButton onClick={() => pauseSong()}>⏸</PlayButton> : <PlayButton onClick={() => resumeSong()}>▶</PlayButton>}
       </BottomDiv>

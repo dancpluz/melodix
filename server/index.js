@@ -25,9 +25,9 @@ io.on("connection", (socket) => {
   console.log(`Conectado com id: ${socket.id}`)
 
   activeConnections.push(socket.id);
-  console.log("Conexões ativas:", activeConnections.slice(1));
+  console.log("Conexões ativas:", activeConnections);
 
-  io.emit("receiveConnections", activeConnections.slice(1));
+  io.emit("receiveConnections", activeConnections);
 
   let songStreams = []
 
@@ -36,8 +36,8 @@ io.on("connection", (socket) => {
     if (index !== -1) {
       activeConnections.splice(index,1);
       console.log(`Desconectado com id: ${socket.id}`);
-      console.log("Conexões ativas:", activeConnections.slice(1));
-      io.emit("receiveConnections", activeConnections.slice(1));
+      console.log("Conexões ativas:", activeConnections);
+      io.emit("receiveConnections", activeConnections);
     }
   });
 
