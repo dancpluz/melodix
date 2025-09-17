@@ -1,15 +1,10 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.rawgit.com/dancpluz/melodix/main/assets/readme-dark.svg">
-    <img src="https://cdn.rawgit.com/dancpluz/melodix/main/assets/readme-light.svg">
+    <img src="music.gif">
   </picture>
 </p>
 
 ## 📚 About
-
-<picture>
-  <img src="https://cdn.rawgit.com/dancpluz/melodix/main/assets/screenshot.gif" align="right" width="40%"/>
-</picture>
 
 This repository contains **Melodix**, an audio streaming application developed as the final project for the **Computer Networks** course at the **University of Brasília (UnB)**. The project is a functional client–server web application built to explore and demonstrate the practical use of **Sockets** for real-time audio streaming.
 
