@@ -1,6 +1,6 @@
 <p align="center">
   <picture>
-    <img src="music.gif">
+    <img width='15%' src="music.gif">
   </picture>
 </p>
 
